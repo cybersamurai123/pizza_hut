@@ -1,0 +1,192 @@
+🍕 Pizza Hut Sales Analytics Dashboard Using SQL
+Author: Sagar Tomar
+Date: May 2025
+
+Project Overview
+Goal:
+Analyze Pizza Hut sales data using SQL to extract actionable business insights and visualize key trends.
+
+Dataset:
+
+Orders
+
+Order Details
+
+Pizzas
+
+Pizza Types
+
+Key Questions:
+
+What sells best?
+
+When are sales highest?
+
+Which categories and pizza types drive the most revenue?
+
+How do sales trends evolve over time?
+
+Database Structure
+orders: order_id, order_date, order_time
+
+order_details: order_details_id, order_id, pizza_id, quantity
+
+pizzas: pizza_id, pizza_type_id, size, price
+
+pizza_types: pizza_type_id, name, category
+
+Analysis & SQL Queries
+1. Total Number of Orders
+sql
+SELECT COUNT(order_id) AS total_orders FROM orders;
+Analysis: Counts all orders placed.
+
+Insight: Shows overall business activity and demand.
+
+2. Total Revenue Generated
+sql
+SELECT ROUND(SUM(order_details.quantity * pizzas.price), 2) AS total_sales
+FROM order_details
+JOIN pizzas ON pizzas.pizza_id = order_details.pizza_id;
+Analysis: Calculates total revenue by multiplying quantity sold by price.
+
+Insight: Measures business performance.
+
+3. Highest Priced Pizza
+sql
+SELECT pizza_types.name, pizzas.price
+FROM pizza_types
+JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+ORDER BY pizzas.price DESC LIMIT 1;
+Analysis: Finds the pizza with the highest price.
+
+Insight: Identifies premium menu items.
+
+4. Most Common Pizza Size Ordered
+sql
+SELECT pizzas.size, COUNT(order_details.order_details_id) AS order_count
+FROM pizzas
+JOIN order_details ON pizzas.pizza_id = order_details.pizza_id
+GROUP BY pizzas.size
+ORDER BY order_count DESC;
+Analysis: Counts orders by pizza size.
+
+Insight: Helps optimize inventory and menu focus.
+
+5. Total Quantity by Pizza Category
+sql
+SELECT pizza_types.category, SUM(order_details.quantity) AS quantity
+FROM pizza_types
+JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+GROUP BY pizza_types.category
+ORDER BY quantity DESC;
+Analysis: Sums pizzas sold by category (e.g., Veg, Non-Veg).
+
+Insight: Reveals customer preferences.
+
+6. Category-wise Distribution of Pizzas
+sql
+SELECT category, COUNT(name) FROM pizza_types GROUP BY category;
+Analysis: Shows the number of pizza types in each category.
+
+Insight: Helps understand menu diversity.
+
+7. Average Number of Pizzas Ordered Per Day
+sql
+SELECT ROUND(AVG(quantity),0) FROM (
+  SELECT orders.order_date, SUM(order_details.quantity) AS quantity
+  FROM orders
+  JOIN order_details ON orders.order_id = order_details.order_id
+  GROUP BY orders.order_date
+) AS order_quantity;
+Analysis: Calculates the average number of pizzas sold per day.
+
+Insight: Helps forecast demand and plan inventory.
+
+8. Top 5 Most Ordered Pizza Types
+sql
+SELECT pizza_types.name, SUM(order_details.quantity) AS quantity
+FROM pizza_types
+JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+GROUP BY pizza_types.name
+ORDER BY quantity DESC LIMIT 5;
+Analysis: Lists the five most popular pizzas.
+
+Insight: Identifies bestsellers for promotions.
+
+9. Order Distribution by Hour
+sql
+SELECT HOUR(order_time) AS hour, COUNT(order_id) AS order_count
+FROM orders
+GROUP BY hour(order_time);
+Analysis: Shows how orders are distributed by hour.
+
+Insight: Helps optimize staffing and marketing.
+
+10. Top 3 Most Ordered Pizza Types Based on Revenue
+sql
+SELECT pizza_types.name,
+SUM(order_details.quantity*pizzas.price) AS revenue
+FROM pizza_types
+JOIN pizzas ON pizzas.pizza_type_id = pizza_types.pizza_type_id
+JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+GROUP BY pizza_types.name
+ORDER BY revenue DESC LIMIT 3;
+Analysis: Determines the top 3 pizza types by revenue generated.
+
+Insight: Highlights high-value menu items.
+
+11. Percentage Contribution of Each Pizza Category to Total Revenue
+sql
+SELECT pizza_types.category,
+(SUM(order_details.quantity*pizzas.price) / (
+  SELECT ROUND(SUM(order_details.quantity * pizzas.price), 2) AS total_sales
+  FROM order_details
+  JOIN pizzas ON pizzas.pizza_id = order_details.pizza_id
+)) * 100 AS revenue
+FROM pizza_types
+JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+GROUP BY pizza_types.category
+ORDER BY revenue DESC;
+Analysis: Calculates what percentage each category contributes to total revenue.
+
+Insight: Reveals the most profitable categories.
+
+12. Cumulative Revenue Generated Over Time
+sql
+SELECT order_date,
+SUM(revenue) OVER(ORDER BY order_date) AS cum_revenue
+FROM (
+  SELECT orders.order_date,
+  SUM(order_details.quantity*pizzas.price) AS revenue
+  FROM order_details
+  JOIN pizzas ON order_details.pizza_id = pizzas.pizza_id
+  JOIN orders ON orders.order_id = order_details.order_id
+  GROUP BY orders.order_date
+) AS sales;
+Analysis: Tracks cumulative revenue by date to visualize growth trends.
+
+Insight: Useful for understanding sales momentum and seasonality.
+
+13. Top 3 Most Ordered Pizza Types by Revenue for Each Category
+sql
+SELECT name, revenue FROM (
+  SELECT category, name, revenue,
+  RANK() OVER (PARTITION BY category ORDER BY revenue DESC) AS rn
+  FROM (
+    SELECT pizza_types.category, pizza_types.name,
+    SUM(order_details.quantity*pizzas.price) AS revenue
+    FROM pizza_types
+    JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+    JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+    GROUP BY pizza_types.category, pizza_types.name
+  ) AS a
+) AS b
+WHERE rn <= 3;
+Analysis: Finds the top 3 pizza types by revenue within each category.
+
+Insight: Enables targeted marketing and menu optimization.
+
