@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Hut Sales Analytics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font import */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        /* Ensure the main container takes up a good portion of the screen */
+        .presentation-container {
+            width: 90%;
+            max-width: 1024px; /* Max width for desktop viewing */
+            height: 80vh; /* Fixed height for presentation feel */
+            min-height: 500px; /* Minimum height */
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* Soft shadow */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Hide overflow for content */
+        }
+        /* Style for code blocks */
+        pre {
+            background-color: #e5e7eb; /* Lighter gray for code background */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto; /* Enable horizontal scrolling for long lines */
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; /* Monospace font for code */
+            font-size: 0.9rem;
+            color: #374151; /* Darker text for code */
+            box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.1); /* Inner shadow for depth */
+        }
+        code {
+            font-family: inherit; /* Inherit font from pre */
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .presentation-container {
+                width: 95%;
+                height: 90vh; /* More height on smaller screens */
+            }
+            h1 {
+                font-size: 2.5rem; /* Adjust title size */
+            }
+            h2 {
+                font-size: 1.75rem; /* Adjust heading size */
+            }
+            .text-xl {
+                font-size: 1.125rem; /* Adjust text size */
+            }
+            .text-lg {
+                font-size: 1rem; /* Adjust text size */
+            }
+            pre {
+                font-size: 0.85rem; /* Smaller font for code on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="presentation-app" class="presentation-container">
+        <div id="slide-content" class="flex-grow flex flex-col items-center justify-center p-8 text-center overflow-y-auto">
+            </div>
+
+        <div class="flex justify-between items-center p-4 bg-gray-100 border-t border-gray-200 rounded-b-xl">
+            <button id="prev-btn"
+                class="px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 ease-in-out bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed">
+                &larr; Previous
+            </button>
+            <span id="slide-counter" class="text-lg text-gray-700"></span>
+            <button id="next-btn"
+                class="px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 ease-in-out bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed">
+                Next &rarr;
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Define the content for each slide
+        const slides = [
+            {
+                title: "Pizza Hut Sales Analytics Dashboard",
+                content: {
+                    type: "title",
+                    author: "Sagar Tomar",
+                    date: "May 2025"
+                }
+            },
+            {
+                title: "Project Overview",
+                content: {
+                    type: "overview",
+                    goal: [
+                        "Analyze Pizza Hut sales data using SQL to extract actionable business insights.",
+                        "Visualize key trends for informed decision-making."
+                    ],
+                    dataset: ["`orders`", "`order_details`", "`pizzas`", "`pizza_types`"],
+                    questions: [
+                        "What sells best?",
+                        "When are sales highest?",
+                        "Which categories and pizza types drive the most revenue?",
+                        "How do sales trends evolve over time?"
+                    ]
+                }
+            },
+            {
+                title: "Database Structure",
+                content: {
+                    type: "db_structure",
+                    tables: [
+                        { name: "`orders` Table", fields: ["`order_id`", "`order_date`", "`order_time`"] },
+                        { name: "`order_details` Table", fields: ["`order_details_id`", "`order_id`", "`pizza_id`", "`quantity`"] },
+                        { name: "`pizzas` Table", fields: ["`pizza_id`", "`pizza_type_id`", "`size`", "`price`"] },
+                        { name: "`pizza_types` Table", fields: ["`pizza_type_id`", "`name`", "`category`"] }
+                    ]
+                }
+            },
+            {
+                title: "Total Number of Orders",
+                content: {
+                    type: "analysis",
+                    question: "What is the total number of orders placed?",
+                    sql: "SELECT COUNT(order_id) AS total_orders FROM orders;",
+                    insight: [
+                        "Measures overall business activity and demand.",
+                        "Provides a baseline for sales volume."
+                    ]
+                }
+            },
+            {
+                title: "Total Revenue Generated",
+                content: {
+                    type: "analysis",
+                    question: "What is the total revenue generated?",
+                    sql: `SELECT ROUND(SUM(order_details.quantity * pizzas.price), 2) AS total_sales
+FROM order_details
+JOIN pizzas ON pizzas.pizza_id = order_details.pizza_id;`,
+                    insight: [
+                        "Directly measures the financial performance of the business.",
+                        "Crucial for assessing profitability and growth."
+                    ]
+                }
+            },
+            {
+                title: "Highest Priced Pizza",
+                content: {
+                    type: "analysis",
+                    question: "Which pizza is the highest priced?",
+                    sql: `SELECT pizza_types.name, pizzas.price
+FROM pizza_types
+JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+ORDER BY pizzas.price DESC
+LIMIT 1;`,
+                    insight: [
+                        "Identifies premium menu items.",
+                        "Can inform pricing strategies or highlight high-value offerings."
+                    ]
+                }
+            },
+            {
+                title: "Most Common Pizza Size Ordered",
+                content: {
+                    type: "analysis",
+                    question: "What is the most commonly ordered pizza size?",
+                    sql: `SELECT pizzas.size, COUNT(order_details.order_details_id) AS order_count
+FROM pizzas
+JOIN order_details ON pizzas.pizza_id = order_details.pizza_id
+GROUP BY pizzas.size
+ORDER BY order_count DESC;`,
+                    insight: [
+                        "Helps optimize inventory and stock levels.",
+                        "Guides marketing efforts towards popular sizes."
+                    ]
+                }
+            },
+            {
+                title: "Total Quantity by Pizza Category",
+                content: {
+                    type: "analysis",
+                    question: "What is the total quantity of pizzas sold by category?",
+                    sql: `SELECT pizza_types.category, SUM(order_details.quantity) AS quantity
+FROM pizza_types
+JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+GROUP BY pizza_types.category
+ORDER BY quantity DESC;`,
+                    insight: [
+                        "Reveals customer preferences across different pizza categories (e.g., Veg, Non-Veg).",
+                        "Informs menu development and promotional focus."
+                    ]
+                }
+            },
+            {
+                title: "Category-wise Distribution of Pizzas",
+                content: {
+                    type: "analysis",
+                    question: "How are pizzas distributed across different categories?",
+                    sql: `SELECT category, COUNT(name) FROM pizza_types GROUP BY category;`,
+                    insight: [
+                        "Shows the diversity and balance of the menu.",
+                        "Helps identify categories with more or fewer pizza options."
+                    ]
+                }
+            },
+            {
+                title: "Average Number of Pizzas Ordered Per Day",
+                content: {
+                    type: "analysis",
+                    question: "What is the average number of pizzas ordered per day?",
+                    sql: `SELECT ROUND(AVG(quantity),0) FROM (
+  SELECT orders.order_date, SUM(order_details.quantity) AS quantity
+  FROM orders
+  JOIN order_details ON orders.order_id = order_details.order_id
+  GROUP BY orders.order_date
+) AS order_quantity;`,
+                    insight: [
+                        "Aids in daily demand forecasting.",
+                        "Supports efficient staffing and resource allocation."
+                    ]
+                }
+            },
+            {
+                title: "Top 5 Most Ordered Pizza Types",
+                content: {
+                    type: "analysis",
+                    question: "What are the top 5 most ordered pizza types?",
+                    sql: `SELECT pizza_types.name, SUM(order_details.quantity) AS quantity
+FROM pizza_types
+JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+GROUP BY pizza_types.name
+ORDER BY quantity DESC
+LIMIT 5;`,
+                    insight: [
+                        "Identifies best-selling items for promotions and featured offerings.",
+                        "Highlights customer favorites."
+                    ]
+                }
+            },
+            {
+                title: "Order Distribution by Hour",
+                content: {
+                    type: "analysis",
+                    question: "How are orders distributed throughout the day (by hour)?",
+                    sql: `SELECT HOUR(order_time) AS hour, COUNT(order_id) AS order_count
+FROM orders
+GROUP BY hour(order_time);`,
+                    insight: [
+                        "Reveals peak ordering hours.",
+                        "Essential for optimizing staffing schedules and targeted marketing campaigns."
+                    ]
+                }
+            },
+            {
+                title: "Top 3 Most Ordered Pizza Types by Revenue",
+                content: {
+                    type: "analysis",
+                    question: "What are the top 3 pizza types based on revenue generated?",
+                    sql: `SELECT pizza_types.name,SUM(order_details.quantity*pizzas.price) AS revenue
+FROM pizza_types
+JOIN pizzas ON pizzas.pizza_type_id = pizza_types.pizza_type_id
+JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+GROUP BY pizza_types.name
+ORDER BY revenue DESC
+LIMIT 3;`,
+                    insight: [
+                        "Highlights high-value menu items that contribute significantly to overall sales.",
+                        "Guides strategic pricing and promotional efforts."
+                    ]
+                }
+            },
+            {
+                title: "Percentage Contribution of Each Pizza Category to Total Revenue",
+                content: {
+                    type: "analysis",
+                    question: "What is the percentage contribution of each pizza category to total revenue?",
+                    sql: `SELECT pizza_types.category,
+(SUM(order_details.quantity*pizzas.price) / (
+  SELECT ROUND(SUM(order_details.quantity * pizzas.price), 2) AS total_sales
+  FROM order_details
+  JOIN pizzas ON pizzas.pizza_id = order_details.pizza_id)) * 100 AS revenue
+FROM pizza_types
+JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+GROUP BY pizza_types.category
+ORDER BY revenue DESC;`,
+                    insight: [
+                        "Reveals the most profitable categories.",
+                        "Informs resource allocation and investment in different menu segments."
+                    ]
+                }
+            },
+            {
+                title: "Cumulative Revenue Generated Over Time",
+                content: {
+                    type: "analysis",
+                    question: "How has cumulative revenue evolved over time?",
+                    sql: `SELECT order_date,SUM(revenue) OVER(ORDER BY order_date) AS cum_revenue
+FROM (
+  SELECT orders.order_date,
+  SUM(order_details.quantity*pizzas.price) AS revenue
+  FROM order_details
+  JOIN pizzas ON order_details.pizza_id = pizzas.pizza_id
+  JOIN orders ON orders.order_id = order_details.order_id
+  GROUP BY orders.order_date
+) AS sales;`,
+                    insight: [
+                        "Visualizes sales momentum and growth trends.",
+                        "Useful for identifying seasonality and long-term performance."
+                    ]
+                }
+            },
+            {
+                title: "Top 3 Most Ordered Pizza Types by Revenue for Each Category",
+                content: {
+                    type: "analysis",
+                    question: "What are the top 3 pizza types by revenue within each category?",
+                    sql: `SELECT name, revenue FROM (
+  SELECT category, name, revenue,
+  RANK() OVER (PARTITION BY category ORDER BY revenue DESC) AS rn
+  FROM (
+    SELECT pizza_types.category, pizza_types.name,
+    SUM(order_details.quantity*pizzas.price) AS revenue
+    FROM pizza_types
+    JOIN pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+    JOIN order_details ON order_details.pizza_id = pizzas.pizza_id
+    GROUP BY pizza_types.category, pizza_types.name
+  ) AS a
+) AS b
+WHERE rn <= 3;`,
+                    insight: [
+                        "Enables highly targeted marketing and menu optimization.",
+                        "Identifies the strongest performers within specific product segments."
+                    ]
+                }
+            },
+            {
+                title: "Summary & Key Takeaways",
+                content: {
+                    type: "summary",
+                    points: [
+                        { heading: "Total orders and revenue:", text: "Indicate overall business scale and health." },
+                        { heading: "Bestseller pizzas and popular sizes:", text: "Reveal direct customer preferences." },
+                        { heading: "Category and type analysis:", text: "Guide menu development and marketing strategies." },
+                        { heading: "Revenue trends and breakdowns:", text: "Support strategic planning, forecasting, and resource allocation." }
+                    ],
+                    overall: "SQL analysis provides actionable insights for optimizing operations, marketing, and menu offerings at Pizza Hut."
+                }
+            }
+        ];
+
+        let currentSlideIndex = 0; // State to track the current slide
+
+        const slideContentDiv = document.getElementById('slide-content');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const slideCounterSpan = document.getElementById('slide-counter');
+
+        // Function to render the current slide's content
+        function renderSlide() {
+            const slide = slides[currentSlideIndex];
+            slideContentDiv.innerHTML = ''; // Clear previous content
+
+            // Create a div for the slide title
+            const titleElement = document.createElement('h1');
+            titleElement.className = 'text-4xl font-bold text-gray-900 mb-6 text-center';
+            titleElement.textContent = slide.title;
+            slideContentDiv.appendChild(titleElement);
+
+            // Render content based on type
+            const content = slide.content;
+            let contentHtml = '';
+
+            switch (content.type) {
+                case "title":
+                    contentHtml = `
+                        <div class="flex flex-col items-center justify-center h-full text-center">
+                            <p class="text-xl text-gray-700">Author: ${content.author}</p>
+                            <p class="text-lg text-gray-600">Date: ${content.date}</p>
+                        </div>
+                    `;
+                    break;
+                case "overview":
+                    contentHtml = `
+                        <div class="p-6">
+                            <h2 class="text-3xl font-semibold text-red-600 mb-4">Goal:</h2>
+                            <ul class="list-disc list-inside text-lg text-gray-800 mb-6">
+                                ${content.goal.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                            <h2 class="text-3xl font-semibold text-red-600 mb-4">Dataset:</h2>
+                            <ul class="list-disc list-inside text-lg text-gray-800 mb-6">
+                                ${content.dataset.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                            <h2 class="text-3xl font-semibold text-red-600 mb-4">Key Questions:</h2>
+                            <ul class="list-disc list-inside text-lg text-gray-800">
+                                ${content.questions.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                    break;
+                case "db_structure":
+                    contentHtml = `
+                        <div class="p-6">
+                            ${content.tables.map(table => `
+                                <div class="mb-6">
+                                    <h3 class="text-2xl font-semibold text-red-600 mb-2">${table.name}:</h3>
+                                    <ul class="list-disc list-inside text-lg text-gray-800">
+                                        ${table.fields.map(field => `<li>${field}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    break;
+                case "analysis":
+                    contentHtml = `
+                        <div class="p-6 w-full">
+                            <h2 class="text-2xl font-semibold text-red-600 mb-3 text-left">Question:</h2>
+                            <p class="text-xl text-gray-800 mb-4 text-left">${content.question}</p>
+                            <h3 class="text-2xl font-semibold text-red-600 mb-3 text-left">SQL Query:</h3>
+                            <pre class="text-left"><code>${content.sql}</code></pre>
+                            <h3 class="text-2xl font-semibold text-red-600 mb-3 text-left mt-4">Insight:</h3>
+                            <ul class="list-disc list-inside text-lg text-gray-800 text-left">
+                                ${content.insight.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                    break;
+                case "summary":
+                    contentHtml = `
+                        <div class="p-6 w-full">
+                            <h2 class="text-3xl font-semibold text-red-600 mb-4 text-left">Summary & Key Takeaways</h2>
+                            ${content.points.map(point => `
+                                <p class="text-lg text-gray-800 mb-2 text-left">
+                                    <strong class="text-red-700">${point.heading}</strong> ${point.text}
+                                </p>
+                            `).join('')}
+                            <p class="text-xl text-gray-800 mt-6 text-left">
+                                <strong class="text-red-700">Overall:</strong> ${content.overall}
+                            </p>
+                        </div>
+                    `;
+                    break;
+                default:
+                    contentHtml = '<div class="p-6 text-xl text-red-500">Slide content not found.</div>';
+            }
+
+            // Create a temporary div to hold the content HTML and append to the slide
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = contentHtml;
+            // Append children of tempDiv to slideContentDiv
+            while (tempDiv.firstChild) {
+                slideContentDiv.appendChild(tempDiv.firstChild);
+            }
+
+            // Update button states and slide counter
+            prevBtn.disabled = currentSlideIndex === 0;
+            nextBtn.disabled = currentSlideIndex === slides.length - 1;
+            slideCounterSpan.textContent = `${currentSlideIndex + 1} / ${slides.length}`;
+
+            // Scroll to top of content area when slide changes
+            slideContentDiv.scrollTop = 0;
+        }
+
+        // Event listeners for navigation buttons
+        prevBtn.addEventListener('click', () => {
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+                renderSlide();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlideIndex < slides.length - 1) {
+                currentSlideIndex++;
+                renderSlide();
+            }
+        });
+
+        // Initial render when the page loads
+        document.addEventListener('DOMContentLoaded', renderSlide);
+    </script>
+
+</body>
+</html>
